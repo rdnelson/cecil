@@ -10,12 +10,11 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyProduct ("Mono.Cecil")]
+[assembly: AssemblyProduct (Consts.AssemblyName)]
 [assembly: AssemblyCopyright ("Copyright © 2008 - 2015 Jb Evain")]
 
 [assembly: ComVisible (false)]
 
-[assembly: AssemblyVersion ("0.9.6.0")]
-#if !CF
-[assembly: AssemblyFileVersion ("0.9.6.0")]
-#endif
+[assembly: AssemblyVersion ("0.10.0.0")]
+[assembly: AssemblyFileVersion ("0.10.0.0")]
+[assembly: AssemblyInformationalVersion ("0.10.0.0-beta6")]

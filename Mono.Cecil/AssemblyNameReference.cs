@@ -113,21 +113,12 @@ namespace Mono.Cecil {
 
 			switch (hash_algorithm) {
 			case AssemblyHashAlgorithm.Reserved:
-#if SILVERLIGHT
-				throw new NotSupportedException ();
-#else
 				algorithm = MD5.Create ();
 				break;
-#endif
 			default:
 				// None default to SHA1
-#if SILVERLIGHT
-				algorithm = new SHA1Managed ();
-				break;
-#else
 				algorithm = SHA1.Create ();
 				break;
-#endif
 			}
 
 			using (algorithm)
@@ -163,6 +154,11 @@ namespace Mono.Cecil {
 					}
 				} else
 					builder.Append ("null");
+
+				if (IsRetargetable) {
+					builder.Append (sep);
+					builder.Append ("Retargetable=Yes");
+				}
 
 				return full_name = builder.ToString ();
 			}
@@ -235,8 +231,7 @@ namespace Mono.Cecil {
 
 		public AssemblyNameReference (string name, Version version)
 		{
-			if (name == null)
-				throw new ArgumentNullException ("name");
+			Mixin.CheckName (name);
 
 			this.name = name;
 			this.version = Mixin.CheckVersion (version);

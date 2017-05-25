@@ -44,8 +44,8 @@ namespace Mono.Cecil.Tests {
 				Assert.AreEqual (2, interfaces.Count);
 
 				// Mono's ilasm and .NET's are ordering interfaces differently
-				Assert.IsNotNull (interfaces.Single (i => i.FullName == "IBar"));
-				Assert.IsNotNull (interfaces.Single (i => i.FullName == "IFoo"));
+				Assert.IsNotNull (interfaces.Single (i => i.InterfaceType.FullName == "IBar"));
+				Assert.IsNotNull (interfaces.Single (i => i.InterfaceType.FullName == "IFoo"));
 			});
 		}
 
@@ -181,7 +181,7 @@ namespace Mono.Cecil.Tests {
 				var type = module.GetType ("Program");
 				var iface = type.Interfaces [0];
 
-				var instance = (GenericInstanceType) iface;
+				var instance = (GenericInstanceType) iface.InterfaceType;
 				var owner = instance.ElementType;
 
 				Assert.AreEqual (1, instance.GenericArguments.Count);
@@ -250,6 +250,29 @@ namespace Mono.Cecil.Tests {
 				Assert.AreEqual (0, fptr.Parameters [0].Sequence);
 				Assert.AreEqual (1, fptr.Parameters [1].Sequence);
 			}, verify: false);
+		}
+
+		[Test]
+		public void DeferredCorlibTypeDef ()
+		{
+			using (var module = ModuleDefinition.ReadModule (typeof (object).Assembly.Location, new ReaderParameters (ReadingMode.Deferred))) {
+				var object_type = module.TypeSystem.Object;
+				Assert.IsInstanceOf<TypeDefinition> (object_type);
+			}
+		}
+
+		[Test]
+		public void CorlibTypesMetadataType ()
+		{
+			using (var module = ModuleDefinition.ReadModule (typeof (object).Assembly.Location)) {
+				var type = module.GetType ("System.String");
+				Assert.IsNotNull (type);
+				Assert.IsNotNull (type.BaseType);
+				Assert.AreEqual ("System.Object", type.BaseType.FullName);
+				Assert.IsInstanceOf<TypeDefinition> (type.BaseType);
+				Assert.AreEqual (MetadataType.String, type.MetadataType);
+				Assert.AreEqual (MetadataType.Object, type.BaseType.MetadataType);
+			}
 		}
 	}
 }

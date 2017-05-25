@@ -110,9 +110,11 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		internal OffsetTable ()
 		{
+#if !NET_CORE
 			int platform = (int) Environment.OSVersion.Platform;
 			if ((platform != 4) && (platform != 128))
 				FileFlags |= Flags.WindowsFileNames;
+#endif
 		}
 
 		internal OffsetTable (BinaryReader reader, int major_version, int minor_version)
@@ -205,7 +207,7 @@ namespace Mono.CompilerServices.SymbolWriter
 		public static readonly LineNumberEntry Null = new LineNumberEntry (0, 0, 0, 0);
 
 		public LineNumberEntry (int file, int row, int column, int offset)
-			: this (file, row, offset, column, false)
+			: this (file, row, column, offset, false)
 		{
 		}
 
@@ -717,20 +719,27 @@ namespace Mono.CompilerServices.SymbolWriter
 			if (guid == null)
 				guid = new byte[16];
 
-			if (hash == null) {
-				try {
-				    using (FileStream fs = new FileStream (file_name, FileMode.Open, FileAccess.Read)) {
-				        MD5 md5 = MD5.Create ();
-				        hash = md5.ComputeHash (fs);
-				    }
-				} catch {
-					hash = new byte [16];
-				}
-			}
+			if (hash == null)
+				hash = ComputeHash ();
 
 			bw.Write (guid);
 			bw.Write (hash);
 			bw.Write ((byte) (auto_generated ? 1 : 0));
+		}
+
+		private byte [] ComputeHash ()
+		{
+			if (!File.Exists (file_name))
+				return new byte [16];
+
+			try {
+				using (FileStream fs = new FileStream (file_name, FileMode.Open, FileAccess.Read)) {
+					MD5 md5 = MD5.Create ();
+					return md5.ComputeHash (fs);
+				}
+			} catch {
+				return new byte [16];
+			}
 		}
 
 		internal void Write (BinaryWriter bw)

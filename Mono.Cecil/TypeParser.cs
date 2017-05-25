@@ -87,17 +87,7 @@ namespace Mono.Cecil {
 
 		static bool ParseInt32 (string value, out int result)
 		{
-#if CF
-			try {
-				result = int.Parse (value);
-				return true;
-			} catch {
-				result = 0;
-				return false;
-			}
-#else
 			return int.TryParse (value, out result);
-#endif
 		}
 
 		static void TryAddArity (string name, ref int arity)
@@ -154,13 +144,7 @@ namespace Mono.Cecil {
 
 		static void Add<T> (ref T [] array, T item)
 		{
-			if (array == null) {
-				array = new [] { item };
-				return;
-			}
-
-			array = array.Resize (array.Length + 1);
-			array [array.Length - 1] = item;
+			array = array.Add (item);
 		}
 
 		int [] ParseSpecs ()
@@ -390,8 +374,13 @@ namespace Mono.Cecil {
 
 			var nested_names = type_info.nested_names;
 			if (!nested_names.IsNullOrEmpty ()) {
-				for (int i = 0; i < nested_names.Length; i++)
-					typedef = typedef.GetNestedType (nested_names [i]);
+				for (int i = 0; i < nested_names.Length; i++) {
+					var nested_type = typedef.GetNestedType (nested_names [i]);
+					if (nested_type == null)
+						return false;
+
+					typedef = nested_type;
+				}
 			}
 
 			type = typedef;
@@ -431,7 +420,9 @@ namespace Mono.Cecil {
 
 		static void AppendType (TypeReference type, StringBuilder name, bool fq_name, bool top_level)
 		{
-			var declaring_type = type.DeclaringType;
+			var element_type = type.GetElementType ();
+
+			var declaring_type = element_type.DeclaringType;
 			if (declaring_type != null) {
 				AppendType (declaring_type, name, false, top_level);
 				name.Append ('+');
@@ -443,7 +434,7 @@ namespace Mono.Cecil {
 				name.Append ('.');
 			}
 
-			AppendNamePart (type.GetElementType ().Name, name);
+			AppendNamePart (element_type.Name, name);
 
 			if (!fq_name)
 				return;

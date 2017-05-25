@@ -8,6 +8,8 @@
 // Licensed under the MIT/X11 license.
 //
 
+#if !NET_CORE
+
 using System;
 using System.Collections.Generic;
 
@@ -24,8 +26,7 @@ namespace Mono.Cecil {
 
 		public override AssemblyDefinition Resolve (AssemblyNameReference name)
 		{
-			if (name == null)
-				throw new ArgumentNullException ("name");
+			Mixin.CheckName (name);
 
 			AssemblyDefinition assembly;
 			if (cache.TryGetValue (name.FullName, out assembly))
@@ -48,5 +49,17 @@ namespace Mono.Cecil {
 
 			cache [name] = assembly;
 		}
+
+		protected override void Dispose (bool disposing)
+		{
+			foreach (var assembly in cache.Values)
+				assembly.Dispose ();
+
+			cache.Clear ();
+
+			base.Dispose (disposing);
+		}
 	}
 }
+
+#endif

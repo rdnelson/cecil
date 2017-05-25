@@ -14,12 +14,9 @@ using Mono.Collections.Generic;
 
 namespace Mono.Cecil {
 
-	public interface IAssemblyResolver {
+	public interface IAssemblyResolver : IDisposable {
 		AssemblyDefinition Resolve (AssemblyNameReference name);
 		AssemblyDefinition Resolve (AssemblyNameReference name, ReaderParameters parameters);
-
-		AssemblyDefinition Resolve (string fullName);
-		AssemblyDefinition Resolve (string fullName, ReaderParameters parameters);
 	}
 
 	public interface IMetadataResolver {
@@ -28,10 +25,10 @@ namespace Mono.Cecil {
 		MethodDefinition Resolve (MethodReference method);
 	}
 
-#if !SILVERLIGHT && !CF
+#if !NET_CORE
 	[Serializable]
 #endif
-	public class ResolutionException : Exception {
+	public sealed class ResolutionException : Exception {
 
 		readonly MemberReference member;
 
@@ -62,8 +59,8 @@ namespace Mono.Cecil {
 			this.member = member;
 		}
 
-#if !SILVERLIGHT && !CF
-		protected ResolutionException (
+#if !NET_CORE
+		ResolutionException (
 			System.Runtime.Serialization.SerializationInfo info,
 			System.Runtime.Serialization.StreamingContext context)
 			: base (info, context)
@@ -90,8 +87,7 @@ namespace Mono.Cecil {
 
 		public virtual TypeDefinition Resolve (TypeReference type)
 		{
-			if (type == null)
-				throw new ArgumentNullException ("type");
+			Mixin.CheckType (type);
 
 			type = type.GetElementType ();
 
@@ -162,8 +158,7 @@ namespace Mono.Cecil {
 
 		public virtual FieldDefinition Resolve (FieldReference field)
 		{
-			if (field == null)
-				throw new ArgumentNullException ("field");
+			Mixin.CheckField (field);
 
 			var type = Resolve (field.DeclaringType);
 			if (type == null)
@@ -210,8 +205,7 @@ namespace Mono.Cecil {
 
 		public virtual MethodDefinition Resolve (MethodReference method)
 		{
-			if (method == null)
-				throw new ArgumentNullException ("method");
+			Mixin.CheckMethod (method);
 
 			var type = Resolve (method.DeclaringType);
 			if (type == null)
@@ -264,6 +258,12 @@ namespace Mono.Cecil {
 			if (a.HasGenericParameters && a.GenericParameters.Count != b.GenericParameters.Count)
 				return false;
 
+            if (a.IsVarArg () != a.IsVarArg ())
+                return false;
+
+            if (a.IsVarArg () && IsVarArgCallTo (a, b))
+                return true;
+
 			if (!AreSame(a.ReturnType, b.ReturnType))
 				return false;
 
@@ -291,6 +291,21 @@ namespace Mono.Cecil {
 
 			for (int i = 0; i < count; i++)
 				if (!AreSame (a [i].ParameterType, b [i].ParameterType))
+					return false;
+
+			return true;
+		}
+
+		static bool IsVarArgCallTo (MethodDefinition method, MethodReference reference)
+		{
+			if (method.Parameters.Count >= reference.Parameters.Count)
+				return false;
+
+			if (reference.GetSentinelPosition () != method.Parameters.Count)
+				return false;
+
+			for (int i = 0; i < method.Parameters.Count; i++)
+				if (!AreSame (method.Parameters [i].ParameterType, reference.Parameters [i].ParameterType))
 					return false;
 
 			return true;

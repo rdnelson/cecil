@@ -1,3 +1,4 @@
+#if !READ_ONLY
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -222,13 +223,13 @@ namespace Mono.Cecil.Tests {
 		[Test]
 		public void ImportGenericTypeDefOrOpen ()
 		{
-			var module = typeof (Foo<>).ToDefinition ().Module;
+			using (var module = typeof (Foo<>).ToDefinition ().Module) {
+				var foo_def = module.ImportReference (typeof (Foo<>));
+				var foo_open = module.ImportReference (typeof (Foo<>), foo_def);
 
-			var foo_def = module.ImportReference (typeof (Foo<>));
-			var foo_open = module.ImportReference (typeof (Foo<>), foo_def);
-
-			Assert.AreEqual ("Mono.Cecil.Tests.ImportReflectionTests/Foo`1", foo_def.FullName);
-			Assert.AreEqual ("Mono.Cecil.Tests.ImportReflectionTests/Foo`1<TFoo>", foo_open.FullName);
+				Assert.AreEqual ("Mono.Cecil.Tests.ImportReflectionTests/Foo`1", foo_def.FullName);
+				Assert.AreEqual ("Mono.Cecil.Tests.ImportReflectionTests/Foo`1<TFoo>", foo_open.FullName);
+			}
 		}
 
 		[Test]
@@ -238,12 +239,12 @@ namespace Mono.Cecil.Tests {
 			var generic_list_foo_open = typeof (Generic<>).MakeGenericType (list_foo);
 
 			var foo_def = typeof (Foo<>).ToDefinition ();
-			var module = foo_def.Module;
+			using (var module = foo_def.Module) {
+				var generic_foo = module.ImportReference (generic_list_foo_open, foo_def);
 
-			var generic_foo = module.ImportReference (generic_list_foo_open, foo_def);
-
-			Assert.AreEqual ("Mono.Cecil.Tests.ImportReflectionTests/Generic`1<System.Collections.Generic.List`1<TFoo>>",
-				generic_foo.FullName);
+				Assert.AreEqual ("Mono.Cecil.Tests.ImportReflectionTests/Generic`1<System.Collections.Generic.List`1<TFoo>>",
+					generic_foo.FullName);
+			}
 		}
 
 		[Test]
@@ -253,12 +254,12 @@ namespace Mono.Cecil.Tests {
 			var generic_foo_open = typeof (Generic<>).MakeGenericType (foo_open);
 
 			var foo_def = typeof (Foo<>).ToDefinition ();
-			var module = foo_def.Module;
+			using (var module = foo_def.Module) {
+				var generic_foo = module.ImportReference (generic_foo_open, foo_def);
 
-			var generic_foo = module.ImportReference (generic_foo_open, foo_def);
-
-			Assert.AreEqual ("Mono.Cecil.Tests.ImportReflectionTests/Generic`1<Mono.Cecil.Tests.ImportReflectionTests/Foo`1<TFoo>>",
-				generic_foo.FullName);
+				Assert.AreEqual ("Mono.Cecil.Tests.ImportReflectionTests/Generic`1<Mono.Cecil.Tests.ImportReflectionTests/Foo`1<TFoo>>",
+					generic_foo.FullName);
+			}
 		}
 
 		[Test]
@@ -268,12 +269,12 @@ namespace Mono.Cecil.Tests {
 			var foo_open_array = foo_open.MakeArrayType ();
 
 			var foo_def = typeof (Foo<>).ToDefinition ();
-			var module = foo_def.Module;
+			using (var module = foo_def.Module) {
+				var array_foo = module.ImportReference (foo_open_array, foo_def);
 
-			var array_foo = module.ImportReference (foo_open_array, foo_def);
-
-			Assert.AreEqual ("Mono.Cecil.Tests.ImportReflectionTests/Foo`1<TFoo>[]",
-				array_foo.FullName);
+				Assert.AreEqual ("Mono.Cecil.Tests.ImportReflectionTests/Foo`1<TFoo>[]",
+					array_foo.FullName);
+			}
 		}
 
 		[Test]
@@ -284,12 +285,12 @@ namespace Mono.Cecil.Tests {
 			var generic_list_foo_open_field = generic_list_foo_open.GetField ("Field");
 
 			var foo_def = typeof (Foo<>).ToDefinition ();
-			var module = foo_def.Module;
+			using (var module = foo_def.Module) {
+				var generic_field = module.ImportReference (generic_list_foo_open_field, foo_def);
 
-			var generic_field = module.ImportReference (generic_list_foo_open_field, foo_def);
-
-			Assert.AreEqual ("T Mono.Cecil.Tests.ImportReflectionTests/Generic`1<System.Collections.Generic.List`1<TFoo>>::Field",
-				generic_field.FullName);
+				Assert.AreEqual ("T Mono.Cecil.Tests.ImportReflectionTests/Generic`1<System.Collections.Generic.List`1<TFoo>>::Field",
+					generic_field.FullName);
+			}
 		}
 
 		[Test]
@@ -300,36 +301,36 @@ namespace Mono.Cecil.Tests {
 			var generic_list_foo_open_method = generic_list_foo_open.GetMethod ("Method");
 
 			var foo_def = typeof (Foo<>).ToDefinition ();
-			var module = foo_def.Module;
+			using (var module = foo_def.Module) {
+				var generic_method = module.ImportReference (generic_list_foo_open_method, foo_def);
 
-			var generic_method = module.ImportReference (generic_list_foo_open_method, foo_def);
-
-			Assert.AreEqual ("T Mono.Cecil.Tests.ImportReflectionTests/Generic`1<System.Collections.Generic.List`1<TFoo>>::Method(T)",
-				generic_method.FullName);
+				Assert.AreEqual ("T Mono.Cecil.Tests.ImportReflectionTests/Generic`1<System.Collections.Generic.List`1<TFoo>>::Method(T)",
+					generic_method.FullName);
+			}
 		}
 
 		[Test]
 		public void ImportMethodOnOpenGenericType ()
 		{
-			var module = typeof (Generic<>).ToDefinition ().Module;
+			using (var module = typeof (Generic<>).ToDefinition ().Module) {
+				var method = module.ImportReference (typeof (Generic<>).GetMethod ("Method"));
 
-			var method = module.ImportReference (typeof (Generic<>).GetMethod ("Method"));
-
-			Assert.AreEqual ("T Mono.Cecil.Tests.ImportReflectionTests/Generic`1<T>::Method(T)", method.FullName);
+				Assert.AreEqual ("T Mono.Cecil.Tests.ImportReflectionTests/Generic`1<T>::Method(T)", method.FullName);
+			}
 		}
 
 		[Test]
 		public void ImportGenericMethodOnOpenGenericType ()
 		{
-			var module = typeof (Generic<>).ToDefinition ().Module;
+			using (var module = typeof (Generic<>).ToDefinition ().Module) {
+				var generic_method = module.ImportReference (typeof (Generic<>).GetMethod ("GenericMethod"));
 
-			var generic_method = module.ImportReference (typeof (Generic<>).GetMethod ("GenericMethod"));
+				Assert.AreEqual ("TS Mono.Cecil.Tests.ImportReflectionTests/Generic`1<T>::GenericMethod(T,TS)", generic_method.FullName);
 
-			Assert.AreEqual ("TS Mono.Cecil.Tests.ImportReflectionTests/Generic`1<T>::GenericMethod(T,TS)", generic_method.FullName);
+				generic_method = module.ImportReference (typeof (Generic<>).GetMethod ("GenericMethod"), generic_method);
 
-			generic_method = module.ImportReference (typeof (Generic<>).GetMethod ("GenericMethod"), generic_method);
-
-			Assert.AreEqual ("TS Mono.Cecil.Tests.ImportReflectionTests/Generic`1<T>::GenericMethod<TS>(T,TS)", generic_method.FullName);
+				Assert.AreEqual ("TS Mono.Cecil.Tests.ImportReflectionTests/Generic`1<T>::GenericMethod<TS>(T,TS)", generic_method.FullName);
+			}
 		}
 
 		delegate void Emitter (ModuleDefinition module, MethodBody body);
@@ -420,3 +421,4 @@ namespace Mono.Cecil.Tests {
 		}
 	}
 }
+#endif

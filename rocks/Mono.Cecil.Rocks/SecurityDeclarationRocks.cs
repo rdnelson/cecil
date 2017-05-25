@@ -8,7 +8,7 @@
 // Licensed under the MIT/X11 license.
 //
 
-#if !SILVERLIGHT && !CF
+#if !NET_CORE
 
 using System;
 using System.Security;
