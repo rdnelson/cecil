@@ -247,7 +247,7 @@ namespace Mono.Cecil {
 			return null;
 		}
 
-		internal static bool AreSame (MethodReference a, MethodReference b)
+		internal static bool AreSame (MethodDefinition a, MethodReference b)
 		{
 			if (a.Name != b.Name)
 				return false;

@@ -915,9 +915,7 @@ namespace Mono.Cecil {
 		public void ImportWin32Resources(ModuleDefinition source)
 		{
 			Section rsrc = source.Image.GetSection(".rsrc");
-			var raw_resources = new byte[rsrc.Data.Length];
-			Buffer.BlockCopy(rsrc.Data, 0, raw_resources, 0, rsrc.Data.Length);
-			Win32Resources = raw_resources;
+            Win32Resources = source.Image.GetReaderAt(rsrc.VirtualAddress, rsrc.SizeOfRawData, (s, reader) => new ByteBuffer (reader.ReadBytes ((int) s)).buffer);
 			Win32RVA = rsrc.VirtualAddress;
 		}
 
@@ -983,8 +981,11 @@ namespace Mono.Cecil {
 				if (win32ResourceDirectory == null && Image != null)
 				{
 					var rsrc = Image.GetSection(".rsrc");
-					if (rsrc != null && rsrc.Data.Length > 0)
-						win32ResourceDirectory = RsrcReader.ReadResourceDirectory(rsrc.Data, rsrc.VirtualAddress);
+					if (rsrc != null && rsrc.SizeOfRawData > 0)
+                    {
+                        var raw_resources = Image.GetReaderAt(rsrc.VirtualAddress, rsrc.SizeOfRawData, (s, reader) => new ByteBuffer (reader.ReadBytes ((int) s)).buffer);
+						win32ResourceDirectory = RsrcReader.ReadResourceDirectory(raw_resources, rsrc.VirtualAddress);
+                    }
 				}
 				return win32ResourceDirectory ?? (win32ResourceDirectory = new ResourceDirectory());
 			}
@@ -992,14 +993,6 @@ namespace Mono.Cecil {
 			{
 				win32ResourceDirectory = value;
 			}
-		}
-
-		public ImageDebugDirectory GetDebugHeader (out byte [] header)
-		{
-			if (!HasDebugHeader)
-				throw new InvalidOperationException ();
-
-			return Image.GetDebugHeader (out header);
 		}
 
 		public ImageDebugHeader GetDebugHeader ()

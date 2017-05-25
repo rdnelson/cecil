@@ -232,7 +232,7 @@ namespace Mono.Cecil {
 				throw new InvalidOperationException ();
 
 			if (type.DeclaringMethod () != null)
-				return context.MethodParameter (NormalizeMethodName (type.DeclaringMethod ()), type.GenericParameterPosition);
+				return context.MethodParameter (type.DeclaringType.FullName, NormalizeMethodName (type.DeclaringMethod ()), type.GenericParameterPosition);
 
 			if (type.DeclaringType != null)
 				return context.TypeParameter (NormalizeTypeFullName (type.DeclaringType), type.GenericParameterPosition);
@@ -685,7 +685,7 @@ namespace Mono.Cecil {
 				var mvar_parameter = (GenericParameter) type;
 				if (mvar_parameter.DeclaringMethod == null)
 					throw new InvalidOperationException ();
-				return context.MethodParameter (((MerhodReference)mvar_parameter.Owner).DeclaringType.FullName, context.NormalizeMethodName (mvar_parameter.DeclaringMethod), mvar_parameter.Position);
+				return context.MethodParameter (((MethodReference)mvar_parameter.Owner).DeclaringType.FullName, context.NormalizeMethodName (mvar_parameter.DeclaringMethod), mvar_parameter.Position);
 			}
 
 			throw new NotSupportedException (type.etype.ToString ());
