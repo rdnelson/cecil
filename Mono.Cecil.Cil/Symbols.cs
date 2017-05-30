@@ -153,6 +153,19 @@ namespace Mono.Cecil.Cil {
 				this.end = new InstructionOffset (end);
 		}
 
+		public ScopeDebugInformation(InstructionOffset start)
+			: this ()
+		{
+			this.start = start;
+		}
+
+		public ScopeDebugInformation(InstructionOffset start, InstructionOffset end)
+			: this ()
+		{
+			this.start = start;
+			this.end = end;
+		}
+
 		public bool TryGetName (VariableDefinition variable, out string name)
 		{
 			name = null;
@@ -503,7 +516,7 @@ namespace Mono.Cecil.Cil {
 
 		public static Guid KindIdentifier = new Guid ("{54FD2AC5-E925-401A-9C2A-F94F171072F8}");
 
-		internal AsyncMethodBodyDebugInformation (int catchHandler)
+		public AsyncMethodBodyDebugInformation (int catchHandler)
 			: base (KindIdentifier)
 		{
 			this.catch_handler = new InstructionOffset (catchHandler);
@@ -543,7 +556,7 @@ namespace Mono.Cecil.Cil {
 
 		public static Guid KindIdentifier = new Guid ("{6DA9A61E-F8C7-4874-BE62-68BC5630DF71}");
 
-		internal StateMachineScopeDebugInformation (int start, int end)
+		public StateMachineScopeDebugInformation (int start, int end)
 			: base (KindIdentifier)
 		{
 			this.start = new InstructionOffset (start);
@@ -826,6 +839,36 @@ namespace Mono.Cecil.Cil {
 
 			throw new ArgumentException ();
 		}
+
+#if !READ_ONLY
+
+		public static ISymbolWriterProvider GetWriterProvider(SymbolKind kind)
+		{
+			if (kind == SymbolKind.PortablePdb)
+				return new PortablePdbWriterProvider ();
+
+			var type = GetSymbolType (kind, GetSymbolTypeName (kind, "WriterProvider"));
+			if (type == null)
+				return null;
+
+			return (ISymbolWriterProvider) Activator.CreateInstance (type);
+		}
+
+		public static SymbolKind GetSymbolKind (Type type)
+		{
+			if (type.Name.Contains(SymbolKind.EmbeddedPortablePdb.ToString()))
+				return SymbolKind.EmbeddedPortablePdb;
+			if (type.Name.Contains (SymbolKind.PortablePdb.ToString ()))
+				return SymbolKind.PortablePdb;
+			if (type.Name.Contains (SymbolKind.NativePdb.ToString ()))
+				return SymbolKind.NativePdb;
+			if (type.Name.Contains (SymbolKind.Mdb.ToString ()))
+				return SymbolKind.Mdb;
+
+			throw new ArgumentException ();
+		}
+
+#endif
 	}
 
 #if !READ_ONLY
@@ -843,18 +886,39 @@ namespace Mono.Cecil.Cil {
 		ISymbolWriter GetSymbolWriter (ModuleDefinition module, Stream symbolStream);
 	}
 
-	public class DefaultSymbolWriterProvider : ISymbolWriterProvider {
+	public class DefaultSymbolWriterProvider : ISymbolWriterProvider
+	{
+		SymbolKind? default_reader_kind;
+
+		public DefaultSymbolWriterProvider ()
+		{
+		}
+
+		public DefaultSymbolWriterProvider(ISymbolReader reader)
+		{
+			default_reader_kind = SymbolProvider.GetSymbolKind(reader.GetType());
+		}
 
 		public ISymbolWriter GetSymbolWriter (ModuleDefinition module, string fileName)
 		{
-			var reader = module.SymbolReader;
-			if (reader == null)
-				throw new InvalidOperationException ();
-
 			if (module.Image != null && module.Image.HasDebugTables ())
 				return null;
 
-			return reader.GetWriterProvider ().GetSymbolWriter (module, fileName);
+			SymbolKind reader_kind;
+			if (default_reader_kind.HasValue)
+			{
+				reader_kind = default_reader_kind.Value;
+			}
+			else
+			{
+				var reader = module.SymbolReader;
+				if (reader == null)
+					throw new InvalidOperationException();
+
+				reader_kind = SymbolProvider.GetSymbolKind(reader.GetType());
+			}
+
+			return SymbolProvider.GetWriterProvider (reader_kind).GetSymbolWriter (module, fileName);
 		}
 
 		public ISymbolWriter GetSymbolWriter (ModuleDefinition module, Stream symbolStream)

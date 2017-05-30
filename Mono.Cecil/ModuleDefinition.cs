@@ -358,6 +358,7 @@ namespace Mono.Cecil {
 
 		public ISymbolReader SymbolReader {
 			get { return symbol_reader; }
+			set { symbol_reader = value; }
 		}
 
 		public override MetadataScopeType MetadataScopeType {
@@ -915,7 +916,7 @@ namespace Mono.Cecil {
 		public void ImportWin32Resources(ModuleDefinition source)
 		{
 			Section rsrc = source.Image.GetSection(".rsrc");
-            Win32Resources = source.Image.GetReaderAt(rsrc.VirtualAddress, rsrc.SizeOfRawData, (s, reader) => new ByteBuffer (reader.ReadBytes ((int) s)).buffer);
+			Win32Resources = source.Image.GetReaderAt(rsrc.VirtualAddress, rsrc.SizeOfRawData, (s, reader) => new ByteBuffer (reader.ReadBytes ((int) s)).buffer);
 			Win32RVA = rsrc.VirtualAddress;
 		}
 
@@ -982,10 +983,10 @@ namespace Mono.Cecil {
 				{
 					var rsrc = Image.GetSection(".rsrc");
 					if (rsrc != null && rsrc.SizeOfRawData > 0)
-                    {
-                        var raw_resources = Image.GetReaderAt(rsrc.VirtualAddress, rsrc.SizeOfRawData, (s, reader) => new ByteBuffer (reader.ReadBytes ((int) s)).buffer);
+					{
+						var raw_resources = Image.GetReaderAt(rsrc.VirtualAddress, rsrc.SizeOfRawData, (s, reader) => new ByteBuffer (reader.ReadBytes ((int) s)).buffer);
 						win32ResourceDirectory = RsrcReader.ReadResourceDirectory(raw_resources, rsrc.VirtualAddress);
-                    }
+					}
 				}
 				return win32ResourceDirectory ?? (win32ResourceDirectory = new ResourceDirectory());
 			}

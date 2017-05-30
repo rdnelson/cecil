@@ -144,7 +144,7 @@ namespace Mono.Cecil.Pdb {
 			}
 		}
 
-		void DefineScope (ScopeDebugInformation scope, MethodDebugInformation info, out MetadataToken import_parent)
+		void DefineScope (ScopeDebugInformation scope, MethodDebugInformation info, out MetadataToken import_parent, bool inner = false)
 		{
 			var start_offset = scope.Start.Offset;
 			var end_offset = scope.End.IsEndOfMethod
@@ -155,7 +155,10 @@ namespace Mono.Cecil.Pdb {
 
 			writer.OpenScope (start_offset);
 
+			var empty = true;
+
 			if (scope.Import != null && scope.Import.HasTargets && !import_info_to_parent.TryGetValue (info.scope.Import, out import_parent)) {
+				empty = false;
 				foreach (var target in scope.Import.Targets) {
 					switch (target.Kind) {
 					case ImportTargetKind.ImportNamespace:
@@ -179,6 +182,7 @@ namespace Mono.Cecil.Pdb {
 			var sym_token = info.local_var_token.ToInt32 ();
 
 			if (!scope.variables.IsNullOrEmpty ()) {
+				empty = false;
 				for (int i = 0; i < scope.variables.Count; i++) {
 					var variable = scope.variables [i];
 					DefineLocalVariable (variable, sym_token, start_offset, end_offset);
@@ -186,6 +190,7 @@ namespace Mono.Cecil.Pdb {
 			}
 
 			if (!scope.constants.IsNullOrEmpty ()) {
+				empty = false;
 				for (int i = 0; i < scope.constants.Count; i++) {
 					var constant = scope.constants [i];
 					DefineConstant (constant);
@@ -193,10 +198,16 @@ namespace Mono.Cecil.Pdb {
 			}
 
 			if (!scope.scopes.IsNullOrEmpty ()) {
+				empty = false;
 				for (int i = 0; i < scope.scopes.Count; i++) {
 					MetadataToken _;
 					DefineScope (scope.scopes [i], info, out _);
 				}
+			}
+
+			if (empty && !inner) {
+				MetadataToken _;
+				DefineScope(scope, info, out _, true);
 			}
 
 			writer.CloseScope (end_offset);
